@@ -175,6 +175,48 @@ class ItemNormalizerTest extends TestCase
         $this->assertEquals($expected, $normalizer->normalize($dummy));
     }
 
+    public function testCacheKeyIsFalseWhenAPropertyHasSecurity(): void
+    {
+        $dummy = new Dummy();
+        $dummy->setName('hello');
+
+        $propertyNameCollectionFactoryMock = $this->createMock(PropertyNameCollectionFactoryInterface::class);
+        $propertyNameCollectionFactoryMock->method('create')->with(Dummy::class)->willReturn(new PropertyNameCollection(['name']));
+
+        $propertyMetadataFactoryMock = $this->createMock(PropertyMetadataFactoryInterface::class);
+        $propertyMetadataFactoryMock->method('create')->with(Dummy::class, 'name')->willReturn(
+            (new ApiProperty())->withDescription('')->withReadable(true)->withSecurity('is_granted(\'ROLE_ADMIN\')')
+        );
+
+        $iriConverterMock = $this->createMock(IriConverterInterface::class);
+        $iriConverterMock->method('getIriFromResource')->willReturn('/dummies/1');
+
+        $resourceClassResolverMock = $this->createMock(ResourceClassResolverInterface::class);
+        $resourceClassResolverMock->method('isResourceClass')->with(Dummy::class)->willReturn(true);
+        $resourceClassResolverMock->method('getResourceClass')->willReturn(Dummy::class);
+
+        $serializerMock = $this->createMock(Serializer::class);
+        $serializerMock->method('normalize')->willReturn('hello');
+
+        $nameConverterMock = $this->createMock(NameConverterInterface::class);
+        $nameConverterMock->method('normalize')->willReturn('name');
+
+        $normalizer = new ItemNormalizer(
+            $propertyNameCollectionFactoryMock,
+            $propertyMetadataFactoryMock,
+            $iriConverterMock,
+            $resourceClassResolverMock,
+            null,
+            $nameConverterMock
+        );
+        $normalizer->setSerializer($serializerMock);
+
+        $normalizer->normalize($dummy);
+
+        $componentsCacheRef = new \ReflectionProperty(ItemNormalizer::class, 'componentsCache');
+        $this->assertSame([], $componentsCacheRef->getValue($normalizer), 'componentsCache must not be populated when a property has security set');
+    }
+
     public function testNormalizeWithUnionIntersectTypes(): void
     {
         $author = new Author(id: 2, name: 'Isaac Asimov');
