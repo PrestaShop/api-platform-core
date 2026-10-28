@@ -74,8 +74,9 @@
         "Swagger"
     ],
     "license": "MIT",
-    "name": "api-platform/core",
+    "name": "prestashop/api-platform-core",
     "replace": {
+        "api-platform/core": "self.version",
         "api-platform/doctrine-common": "self.version",
         "api-platform/doctrine-odm": "self.version",
         "api-platform/doctrine-orm": "self.version",
